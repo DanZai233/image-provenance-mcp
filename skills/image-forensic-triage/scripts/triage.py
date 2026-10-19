@@ -186,11 +186,17 @@ def grade_hint(info: dict) -> tuple[str, str]:
     if info["width"] * info["height"] < 64 * 64:
         return "D", "too small to analyse"
     stripped = info["exif"]["count"] == 0
-    resized = max(info["width"], info["height"]) < 1600 or info.get("dpi") == 96
+    small = max(info["width"], info["height"]) < 1600
+    dpi96 = info.get("dpi") == 96
     if info["annotations"]:
         return "C", "vector annotation present — not the camera original"
-    if stripped and resized:
-        return "C", "EXIF stripped and dimensions reduced — re-encoded"
+    if stripped and (small or dpi96):
+        why = []
+        if small:
+            why.append(f"{info['width']}×{info['height']} is small for a camera original")
+        if dpi96:
+            why.append("96 dpi re-export marker")
+        return "C", "EXIF stripped; " + "; ".join(why)
     if not stripped:
         return "B", "EXIF present — structure can still be checked"
     return "C", "no EXIF; cannot exclude re-encoding"
