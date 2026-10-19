@@ -121,6 +121,46 @@ Check the wiring without any SDK — the probe speaks raw JSON-RPC over stdio:
 python examples/probe_mcp.py image-provenance --mcp
 ```
 
+## Agent skill: forensic triage
+
+The CLI answers "what does this file prove". The hard part is everything around it: deciding what
+to run first, which findings to trust, and how far the evidence can be pushed before the answer
+becomes a lie. That reasoning is packaged as a skill your agent can load.
+
+```
+skills/image-forensic-triage/
+├── SKILL.md                          # the protocol: tier 1 → tier 2 → human layer → grade
+├── references/
+│   ├── evidence-grading.md           # A/B/C/D, and what each grade may NOT be used for
+│   ├── false-positives.md            # seven failures observed in real files, with the numbers
+│   └── worked-examples.md            # three cases end to end, including a wrong first answer
+└── scripts/triage.py                 # batch ledger → markdown + json
+```
+
+Give it to an agent (Claude Code, DSH and anything else that reads `~/.dsh/skills` or a repo
+`skills/` folder) either in place or by symlink:
+
+```bash
+ln -s "$PWD/skills/image-forensic-triage" ~/.dsh/skills/image-forensic-triage
+```
+
+Then a plain question gets a graded answer instead of a guess:
+
+```bash
+python skills/image-forensic-triage/scripts/triage.py inbox/*.jpg
+```
+
+```
+| file | size | dims | C2PA | notes | grade |
+|---|---|---|---|---|---|
+| `hmi.jpg` | 100 KB | 540×618 | none | annotation #ba1807×4630; EXIF stripped | C (vector annotation present — not the camera original) |
+| `doc.jpg` | 461 KB | 1773×2364 | none | EXIF stripped; block-noise outlier ×40.49 | C (no EXIF; cannot exclude re-encoding) |
+| `signed.png` | 1852 KB | 841×1870 | AI_GENERATED (OpenAI Media Service API) | block-noise outlier ×28.28 | A (signed, pixel hash verified) |
+```
+
+The script is the deterministic part; `SKILL.md` is what keeps an agent from reporting the middle
+row as "authentic" and the first row as "AI-generated".
+
 ## What is actually verified
 
 | test | result |
@@ -130,7 +170,7 @@ python examples/probe_mcp.py image-provenance --mcp
 | **tamper**: flip one byte inside IDAT, keep the manifest | `INVALID_HASH`; both hashing strategies independently produce `37bf1185…`, so the mismatch is the content's fault, not the verifier's |
 | PNG without a manifest | `NO_C2PA`, no crash |
 | truncated file | `NO_C2PA`, no crash |
-| 20 unit tests | `python -m unittest discover -s tests` |
+| 27 unit tests | `python -m unittest discover -s tests` |
 
 ## Limitations (read these)
 
