@@ -62,6 +62,16 @@ cd image-provenance-mcp
 pip install -e '.[pixel]'      # omit [pixel] for C2PA only
 ```
 
+No network to a package index? Skip packaging entirely and run from the tree:
+
+```bash
+PYTHONPATH=src python -m provenance_mcp photo.jpg
+PYTHONPATH=src python -m provenance_mcp --mcp        # stdio MCP server
+```
+
+Tier 1 needs only the standard library and `openssl`, so that works on a bare
+interpreter.
+
 ## CLI
 
 ```bash
