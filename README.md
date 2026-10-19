@@ -1,5 +1,7 @@
 # image-provenance-mcp
 
+[![tests](https://github.com/DanZai233/image-provenance-mcp/actions/workflows/tests.yml/badge.svg)](https://github.com/DanZai233/image-provenance-mcp/actions/workflows/tests.yml)
+
 **Read the signature before guessing from pixels.**
 
 An MCP server for one question: *is this image AI-made, edited, or real?* It answers in two tiers,
