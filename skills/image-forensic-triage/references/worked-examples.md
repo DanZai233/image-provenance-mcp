@@ -31,12 +31,13 @@ signature. This is the entire argument for tier ordering.
 
 **Human-level tells, for when there is no signature:** 100.0 °C in a living room; the probe
 held in mid-air, touching nothing; the reading is exactly the textbook boiling point with a
-`.0` decimal — generators love round numbers; and the watermark reads the watermark place 13:42
-2025-12-02, the same app, place and day as a genuine site photo taken 12 minutes earlier.
+`.0` decimal — generators love round numbers; and the burned-in watermark shows the same
+app, the same place string and the same day as a genuine site photo taken 12 minutes
+earlier. The generated image borrowed real metadata from a real photo stream.
 
 ## Case 2 — A document that cannot be cleared by pixels
 
-`resignation-letter.jpg` · 1773×2364 JPEG · 471,698 bytes
+`resignation-letter.jpg` · 1773×2364 JPEG · 471,698 bytes (a messenger re-export)
 
 **Tier 1:** `NO_C2PA` — WeChat strips it. **Metadata:** `Exif tags: 0`.
 
@@ -51,11 +52,11 @@ ELA and noise statistics stop carrying information.
 
 | Check | Result |
 |---|---|
-| ID checksum (GB 11643) | `111111111111111111` → expected `8`, got `8` **PASS** |
-| Region code | region code matched the home province |
-| Timeline | 2023-07-01 → 2026-06-30, exactly three years, age 22 at hire |
-| Signature date | 2026-06-30, same as the termination date |
-| Company | the named employer exists (工商年报 2023 / 2025 available) |
+| ID checksum (GB 11643) | 18-digit number, check digit **PASS** (value withheld) |
+| Region code | the embedded region code matched the named home province |
+| Timeline | hire date → termination date, exactly three years, age 22 at hire |
+| Signature date | identical to the termination date |
+| Company | the named employer exists and files annual reports (public registry) |
 | Seal | pale red, hand-written-looking glyph forms; HF energy inside strokes 32.6 vs 22.1 on blank paper — **inconclusive**, strokes are 3 px wide so edge contamination dominates |
 
 Grade **B** for "no sign of tampering", grade **C** for anything stronger. The honest output
