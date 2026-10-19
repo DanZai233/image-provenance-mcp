@@ -33,5 +33,6 @@ jobs:
 
       - name: CLI smoke test
         run: |
-          image-provenance tests/fixtures/signed_chatgpt.png | head -5
-          image-provenance tests/fixtures/plain.png --mode c2pa || echo "exit 1 as expected for NO_C2PA"
+          python -c "from tests.fixture_builders import write_fixtures; write_fixtures('smoke')"
+          image-provenance smoke/signed_synthetic.png | head -5
+          image-provenance smoke/plain.png --mode c2pa || echo "exit 1 as expected for NO_C2PA"

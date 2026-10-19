@@ -35,7 +35,10 @@ def _load_image(image_path: str) -> Image.Image:
     path = Path(image_path).expanduser().resolve()
     if not path.exists():
         raise FileNotFoundError(f"Image not found: {path}")
-    return Image.open(path)
+    # Read the bytes and close the handle: PIL would otherwise keep the file open
+    # for the lifetime of the decoded image, which leaks a descriptor per call.
+    with open(path, "rb") as fh:
+        return Image.open(io.BytesIO(fh.read()))
 
 
 def _image_to_base64(img: Image.Image, fmt: str = "PNG") -> str:

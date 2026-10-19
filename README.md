@@ -163,13 +163,17 @@ row as "authentic" and the first row as "AI-generated".
 
 ## What is actually verified
 
+The test suite builds its own fixtures byte by byte (`tests/fixture_builders.py`); no
+photograph is committed. That proves the reader handles the structure, not that any
+particular vendor's output is genuine — for that, run it on a file you already trust.
+
 | test | result |
 |---|---|
-| ChatGPT/gpt-image PNG | `AI_GENERATED`, generator `OpenAI Media Service API` (c2pa-rs 0.79.2), chain `CN=OpenAI Media Service` ← `Trufo C2PA Claim Signing CA` |
-| hard binding recomputed | `sha256 cbd859ea…` matches the signed value |
-| **tamper**: flip one byte inside IDAT, keep the manifest | `INVALID_HASH`; both hashing strategies independently produce `37bf1185…`, so the mismatch is the content's fault, not the verifier's |
+| synthetic manifest, bound to its pixels | `AI_GENERATED` from `digitalSourceType`, `hash: ok`, method `carrier-removed` |
+| **tamper**: flip one byte inside IDAT, keep the manifest | `INVALID_HASH`; every strategy that can run produces the same wrong digest, so the mismatch is the content's fault, not the verifier's |
 | PNG without a manifest | `NO_C2PA`, no crash |
 | truncated file | `NO_C2PA`, no crash |
+| real-world check (maintainer, out of tree) | a ChatGPT/gpt-image PNG read as `AI_GENERATED` with generator `OpenAI Media Service API` (c2pa-rs 0.79.2) and chain `CN=OpenAI Media Service` ← `Trufo C2PA Claim Signing CA` |
 | 27 unit tests | `python -m unittest discover -s tests` |
 
 ## Limitations (read these)

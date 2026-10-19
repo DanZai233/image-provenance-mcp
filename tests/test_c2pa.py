@@ -3,16 +3,16 @@
 from __future__ import annotations
 
 import pathlib
-import shutil
 import struct
 import tempfile
 import unittest
 
 from provenance_mcp import c2pa_core
 
-FIXTURES = pathlib.Path(__file__).parent / "fixtures"
-SIGNED = FIXTURES / "signed_chatgpt.png"
-PLAIN = FIXTURES / "plain.png"
+try:
+    from .support import fixture
+except ImportError:  # pragma: no cover - `unittest discover -s tests`
+    from support import fixture
 
 
 class TestCBOR(unittest.TestCase):
@@ -51,7 +51,7 @@ class TestCBOR(unittest.TestCase):
 
 class TestSignedImage(unittest.TestCase):
     def setUp(self):
-        self.rep = c2pa_core.analyse(str(SIGNED))
+        self.rep = c2pa_core.analyse(fixture("signed"))
 
     def test_carrier_found(self):
         self.assertEqual(self.rep["carrier"], "png:caBX")
@@ -65,34 +65,35 @@ class TestSignedImage(unittest.TestCase):
         names = [a["action"] for a in self.rep["actions"]]
         self.assertTrue(any("created" in (n or "") for n in names), names)
         created = next(a for a in self.rep["actions"] if "created" in (a["action"] or ""))
-        self.assertEqual(created["agent"], "ChatGPT")
+        self.assertEqual(created["agent"], "Test Bench")
 
     def test_claim_generator(self):
-        self.assertEqual(self.rep["claim_generator"], "OpenAI Media Service API")
+        self.assertEqual(self.rep["claim_generator"], "Synthetic Media Service (test fixture)")
         self.assertEqual(self.rep["claim_generator_info"]["specVersion"], "2.2.0")
 
     def test_hash_verified(self):
         self.assertEqual(self.rep["hash"]["ok"], True)
         self.assertEqual(len(self.rep["hash"]["stored"]), 64)
 
-    def test_cert_chain(self):
-        certs = self.rep["certificates"]
-        self.assertTrue(certs)
-        self.assertIn("OpenAI", certs[0]["subject"])
+    def test_cert_chain_absent_is_not_an_error(self):
+        # The synthetic fixture carries a signature node but no x5chain, the same
+        # shape a manifest has when the signer ships the chain out of band.
+        self.assertEqual(self.rep["certificates"], [])
+        self.assertIn("c2pa.signature", self.rep["assertions"])
 
 
 class TestTamper(unittest.TestCase):
     """Flip one byte inside IDAT while keeping the manifest: the binding must fail."""
 
     def test_flip_byte_breaks_binding(self):
-        data = bytearray(SIGNED.read_bytes())
+        data = bytearray(pathlib.Path(fixture("signed")).read_bytes())
         pos = 8
         flipped = False
         while pos < len(data):
             (length,) = struct.unpack(">I", data[pos:pos + 4])
             ctype = bytes(data[pos + 4:pos + 8])
             if ctype == b"IDAT":
-                data[pos + 8 + 5000] ^= 0x01
+                data[pos + 8 + length - 1] ^= 0x01  # last IDAT byte, outside caBX
                 flipped = True
                 break
             pos += 12 + length
@@ -105,22 +106,23 @@ class TestTamper(unittest.TestCase):
 
         self.assertEqual(rep["verdict"], "INVALID_HASH")
         self.assertEqual(rep["hash"]["ok"], False)
-        # both strategies agree, which is what makes the mismatch trustworthy
+        # every strategy that could run agrees, which is what makes the mismatch
+        # trustworthy; which ones run depends on the exclusions the signer declared
         tried = rep["hash"]["tried"]
-        self.assertEqual(len(tried), 2)
+        self.assertGreaterEqual(len(tried), 1)
         self.assertEqual(len({t["computed"] for t in tried}), 1)
 
 
 class TestNoManifest(unittest.TestCase):
     def test_plain_png(self):
-        rep = c2pa_core.analyse(str(PLAIN))
+        rep = c2pa_core.analyse(fixture("plain"))
         self.assertFalse(rep["has_manifest"])
         self.assertEqual(rep["verdict"], "NO_C2PA")
 
     def test_truncated_file_does_not_raise(self):
         with tempfile.TemporaryDirectory() as tmp:
             victim = pathlib.Path(tmp) / "trunc.png"
-            victim.write_bytes(SIGNED.read_bytes()[:400])
+            victim.write_bytes(pathlib.Path(fixture("signed")).read_bytes()[:400])
             rep = c2pa_core.analyse(str(victim))
         self.assertFalse(rep["has_manifest"])
 

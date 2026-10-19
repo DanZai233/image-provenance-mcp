@@ -8,3 +8,5 @@ venv/
 .pytest_cache/
 .DS_Store
 out/
+tests/fixtures/*.png
+smoke/

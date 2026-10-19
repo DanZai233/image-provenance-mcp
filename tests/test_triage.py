@@ -11,7 +11,11 @@ import unittest
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
 SCRIPT = os.path.join(ROOT, "skills", "image-forensic-triage", "scripts", "triage.py")
-FIXTURES = os.path.join(HERE, "fixtures")
+
+try:
+    from .support import fixture
+except ImportError:  # pragma: no cover - `unittest discover -s tests`
+    from support import fixture
 
 try:
     from PIL import Image, ImageDraw
@@ -72,19 +76,19 @@ class ProbeTest(unittest.TestCase):
         self.triage = load_triage()
 
     def test_signed_fixture_reaches_grade_a(self):
-        row = self.triage.probe(os.path.join(FIXTURES, "signed_chatgpt.png"))
+        row = self.triage.probe(fixture("signed"))
         self.assertTrue(row["c2pa"]["has_manifest"])
         self.assertEqual(row["c2pa"]["verdict"], "AI_GENERATED")
         self.assertTrue(row["c2pa"]["hash_ok"])
         self.assertEqual(row["grade_hint"]["grade"], "A")
 
     def test_unsigned_file_is_not_grade_a(self):
-        row = self.triage.probe(os.path.join(FIXTURES, "plain.png"))
+        row = self.triage.probe(fixture("plain"))
         self.assertFalse(row["c2pa"]["has_manifest"])
         self.assertNotEqual(row["grade_hint"]["grade"], "A")
 
     def test_missing_file_is_reported_not_raised(self):
-        row = self.triage.probe(os.path.join(FIXTURES, "does-not-exist.png"))
+        row = self.triage.probe(os.path.join(tempfile.gettempdir(), "nope-does-not-exist.png"))
         self.assertIn("error", row)
 
     def test_cli_writes_json_and_markdown(self):
@@ -92,7 +96,7 @@ class ProbeTest(unittest.TestCase):
             json_path = os.path.join(tmp, "ledger.json")
             md_path = os.path.join(tmp, "ledger.md")
             code = self.triage.main([
-                os.path.join(FIXTURES, "plain.png"),
+                fixture("plain"),
                 "--json", json_path,
                 "--md", md_path,
             ])
